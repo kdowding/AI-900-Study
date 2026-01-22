@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Azure Service Comparison - Azure AI-900 Study App{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="card-title mb-2">
+                                <i class="bi bi-diagram-3-fill me-2"></i>
+                                Azure AI Service Comparison
+                            </h1>
+                            <p class="card-text mb-0">
+                                Quick reference guide for choosing the right Azure AI service
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{{ url_for('index') }}" class="btn btn-light">
+                                <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ML Techniques Comparison -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="bi bi-cpu me-2"></i>
+                Machine Learning Techniques
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Technique</th>
+                                    <th>Learning Type</th>
+                                    <th>Output</th>
+                                    <th>Examples</th>
+                                    <th>Key Point</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for technique in ml_techniques %}
+                                <tr>
+                                    <td><strong>{{ technique.name }}</strong></td>
+                                    <td>{{ technique.type }}</td>
+                                    <td>{{ technique.output }}</td>
+                                    <td>
+                                        <ul class="mb-0 small">
+                                            {% for example in technique.examples %}
+                                            <li>{{ example }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                    <td><span class="badge bg-primary">{{ technique.key_point }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Service Comparisons -->
+    {% for category, data in comparisons.items() %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="bi bi-cloud me-2"></i>
+                {{ data.title }}
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 15%;">Service</th>
+                                    <th style="width: 20%;">Use Case</th>
+                                    <th style="width: 30%;">Key Features</th>
+                                    <th style="width: 35%;">When to Use</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for service in data.services %}
+                                <tr>
+                                    <td><strong class="text-primary">{{ service.name }}</strong></td>
+                                    <td>{{ service.use_case }}</td>
+                                    <td>
+                                        <ul class="mb-0 small">
+                                            {% for feature in service.key_features %}
+                                            <li>{{ feature }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ service.when_to_use }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Responsible AI Principles -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="bi bi-shield-check me-2"></i>
+                Responsible AI Principles
+            </h3>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-primary">
+                <div class="card-body">
+                    <h6 class="card-title text-primary">Fairness</h6>
+                    <p class="card-text small">AI systems should treat all people fairly and avoid bias</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-success">
+                <div class="card-body">
+                    <h6 class="card-title text-success">Reliability & Safety</h6>
+                    <p class="card-text small">AI systems should perform reliably and safely</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-warning">
+                <div class="card-body">
+                    <h6 class="card-title text-warning">Privacy & Security</h6>
+                    <p class="card-text small">AI systems should be secure and respect privacy</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-info">
+                <div class="card-body">
+                    <h6 class="card-title text-info">Inclusiveness</h6>
+                    <p class="card-text small">AI systems should empower everyone and engage people</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-secondary">
+                <div class="card-body">
+                    <h6 class="card-title text-secondary">Transparency</h6>
+                    <p class="card-text small">AI systems should be understandable</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-danger">
+                <div class="card-body">
+                    <h6 class="card-title text-danger">Accountability</h6>
+                    <p class="card-text small">People should be accountable for AI systems</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Tips -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-lightbulb-fill text-warning me-2"></i>
+                        Exam Tips for Service Selection Questions
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Common Question Patterns:</h6>
+                            <ul>
+                                <li>Choose between Azure AI Vision vs Custom Vision</li>
+                                <li>When to use Azure Machine Learning vs Azure AI Services</li>
+                                <li>Supervised vs Unsupervised learning scenarios</li>
+                                <li>Which Responsible AI principle applies to a scenario</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>How to Answer:</h6>
+                            <ul>
+                                <li>Look for keywords: "custom", "pre-built", "specific domain"</li>
+                                <li>Pre-built services = Azure AI Services</li>
+                                <li>Custom models = Azure Machine Learning or Custom Vision</li>
+                                <li>Always consider the use case and requirements</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

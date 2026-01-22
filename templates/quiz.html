@@ -1,0 +1,570 @@
+{% extends "base.html" %}
+
+{% block title %}Practice Quiz - Azure AI-900 Study App{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Quiz Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="card-title mb-2">
+                                <i class="bi bi-question-circle-fill me-2"></i>
+                                Practice Quiz
+                            </h1>
+                            <p class="card-text mb-0">
+                                Test your knowledge with {{ questions|length }} questions
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{{ url_for('index') }}" class="btn btn-light">
+                                <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Content -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div id="quiz-container">
+                <!-- Quiz Instructions -->
+                <div id="quiz-instructions" class="card mb-4">
+                    <div class="card-body text-center">
+                        <i class="bi bi-info-circle-fill text-info display-4 mb-3"></i>
+                        <h4>Quiz Instructions</h4>
+                        <p class="mb-3">
+                            This quiz contains {{ questions|length }} multiple-choice questions.
+                            Take your time and select the best answer for each question.
+                        </p>
+                        <ul class="list-unstyled text-start">
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                Choose one answer per question
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                You can review and change answers before submitting
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                Detailed explanations provided after submission
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-keyboard text-info me-2"></i>
+                                Use <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> <kbd>D</kbd> keys to select answers quickly
+                                (press <kbd>?</kbd> for all shortcuts)
+                            </li>
+                        </ul>
+                        <button class="btn btn-primary btn-lg" onclick="startQuiz()">
+                            <i class="bi bi-play-fill me-1"></i>Start Quiz
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quiz Questions -->
+                <div id="quiz-questions" style="display: none;">
+                    {% for question in questions %}
+                    <div class="question-card" id="question-{{ loop.index0 }}" 
+                         style="{% if loop.index0 != 0 %}display: none;{% endif %}">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Question {{ loop.index }} of {{ questions|length }}</h5>
+                                    <div class="progress" style="width: 150px; height: 6px;">
+                                        <div class="progress-bar" 
+                                             style="width: {{ (loop.index / questions|length) * 100 }}%">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title mb-4">{{ question.question }}</h5>
+                                
+                                <div class="options">
+                                    {% for option in question.options %}
+                                    <div class="quiz-option" 
+                                         onclick="selectOption({{ question.number }}, '{{ option.letter }}', this)">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                <strong>{{ option.letter }})</strong>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                {{ option.text }}
+                                            </div>
+                                            <div class="ms-3">
+                                                <i class="bi bi-circle option-indicator"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        {% if loop.index0 > 0 %}
+                                        <button class="btn btn-outline-primary" 
+                                                onclick="previousQuestion({{ loop.index0 }})">
+                                            <i class="bi bi-chevron-left me-1"></i>Previous
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        {% if loop.index0 < questions|length - 1 %}
+                                        <button class="btn btn-primary" 
+                                                onclick="nextQuestion({{ loop.index0 }})">
+                                            Next<i class="bi bi-chevron-right ms-1"></i>
+                                        </button>
+                                        {% else %}
+                                        <button class="btn btn-success" onclick="submitQuiz()">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Submit Quiz
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Quiz Results -->
+                <div id="quiz-results" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white text-center">
+                            <h4 class="mb-0">
+                                <i class="bi bi-trophy-fill me-2"></i>Quiz Results
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center mb-4">
+                                <div class="display-4 fw-bold text-primary" id="score-percentage">0%</div>
+                                <div class="h5 text-muted" id="score-details">0 out of 0 correct</div>
+                                <div class="mt-3" id="score-message"></div>
+                            </div>
+                            
+                            <!-- Detailed Results -->
+                            <div id="detailed-results">
+                                <!-- Results will be populated by JavaScript -->
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="text-center mt-4">
+                                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                    <button class="btn btn-primary" onclick="retakeQuiz()">
+                                        <i class="bi bi-arrow-clockwise me-1"></i>Retake Quiz
+                                    </button>
+                                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                                        <i class="bi bi-house me-1"></i>Dashboard
+                                    </a>
+                                    <a href="{{ url_for('review') }}" class="btn btn-info">
+                                        <i class="bi bi-bookmark me-1"></i>Review Key Concepts
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentQuestion = 0;
+    let answers = {};
+    let quizData = {{ questions|tojson|safe }};
+    let totalQuestions = {{ questions|length }};
+    let quizStartTime = null;
+    let quizTimer = null;
+    
+    function startQuiz() {
+        document.getElementById('quiz-instructions').style.display = 'none';
+        document.getElementById('quiz-questions').style.display = 'block';
+        
+        // Start timer
+        quizStartTime = Date.now();
+        startQuizTimer();
+        
+        showQuestion(0);
+    }
+    
+    function startQuizTimer() {
+        // Create timer display if it doesn't exist
+        if (!document.getElementById('quiz-timer')) {
+            const timerHTML = `
+                <div id="quiz-timer" class="alert alert-info position-fixed" style="top: 80px; left: 20px; z-index: 1000; min-width: 150px;">
+                    <i class="bi bi-clock me-2"></i>
+                    <strong>Time: <span id="timer-display">00:00</span></strong>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', timerHTML);
+        }
+        
+        // Update timer every second
+        quizTimer = setInterval(function() {
+            const elapsed = Math.floor((Date.now() - quizStartTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timer-display').textContent = 
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }, 1000);
+    }
+    
+    function stopQuizTimer() {
+        if (quizTimer) {
+            clearInterval(quizTimer);
+            quizTimer = null;
+        }
+        const timerEl = document.getElementById('quiz-timer');
+        if (timerEl) {
+            timerEl.remove();
+        }
+    }
+    
+    function getElapsedTime() {
+        if (!quizStartTime) return 0;
+        return Math.floor((Date.now() - quizStartTime) / 1000);
+    }
+    
+    function showQuestion(questionIndex) {
+        // Hide all questions
+        document.querySelectorAll('.question-card').forEach(card => {
+            card.style.display = 'none';
+        });
+        
+        // Show current question
+        const questionCard = document.getElementById('question-' + questionIndex);
+        questionCard.style.display = 'block';
+        currentQuestion = questionIndex;
+        
+        // Reset all options to unselected state
+        questionCard.querySelectorAll('.quiz-option').forEach(option => {
+            option.classList.remove('selected');
+            const indicator = option.querySelector('.option-indicator');
+            if (indicator) {
+                indicator.className = 'bi bi-circle option-indicator';
+            }
+        });
+        
+        // Restore selected answer if exists
+        const questionNum = quizData[questionIndex].number;
+        if (answers[questionNum]) {
+            const selectedOption = questionCard.querySelector(
+                `.quiz-option[onclick*="'${answers[questionNum]}'"]`
+            );
+            if (selectedOption) {
+                selectedOption.classList.add('selected');
+                const indicator = selectedOption.querySelector('.option-indicator');
+                if (indicator) {
+                    indicator.className = 'bi bi-check-circle-fill text-primary option-indicator';
+                }
+                // Enable next button since answer is already selected
+                const nextBtn = questionCard.querySelector('.btn-primary, .btn-success');
+                if (nextBtn) {
+                    nextBtn.disabled = false;
+                }
+            }
+        }
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+
+    }
+    
+    function selectOption(questionNum, optionLetter, element) {
+        // Remove selection from all options in this question
+        const questionCard = element.closest('.question-card');
+        questionCard.querySelectorAll('.quiz-option').forEach(option => {
+            option.classList.remove('selected');
+            const indicator = option.querySelector('.option-indicator');
+            if (indicator) {
+                indicator.className = 'bi bi-circle option-indicator';
+            }
+        });
+        
+        // Select clicked option
+        element.classList.add('selected');
+        const selectedIndicator = element.querySelector('.option-indicator');
+        if (selectedIndicator) {
+            selectedIndicator.className = 'bi bi-check-circle-fill text-primary option-indicator';
+        }
+        
+        // Store answer (can change answer anytime before submission)
+        answers[questionNum] = optionLetter;
+        
+        // Enable next button
+        const nextBtn = questionCard.querySelector('.btn-primary, .btn-success');
+        if (nextBtn) {
+            nextBtn.disabled = false;
+        }
+    }
+    
+    function nextQuestion(currentIndex) {
+        if (currentIndex + 1 < totalQuestions) {
+            showQuestion(currentIndex + 1);
+        }
+    }
+    
+    function previousQuestion(currentIndex) {
+        if (currentIndex > 0) {
+            showQuestion(currentIndex - 1);
+        }
+    }
+    
+    function submitQuiz() {
+        // Check if all questions are answered
+        const unanswered = [];
+        quizData.forEach(question => {
+            if (!answers[question.number]) {
+                unanswered.push(question.number);
+            }
+        });
+        
+        if (unanswered.length > 0) {
+            const unansweredList = unanswered.join(', ');
+            const message = `You have ${unanswered.length} unanswered question${unanswered.length > 1 ? 's' : ''} (${unansweredList}).\n\nSubmit anyway?`;
+            if (!confirm(message)) {
+                // Navigate to first unanswered question
+                const firstUnanswered = quizData.findIndex(q => q.number === unanswered[0]);
+                if (firstUnanswered !== -1) {
+                    showQuestion(firstUnanswered);
+                }
+                return;
+            }
+        }
+        
+        // Get elapsed time
+        const timeTaken = getElapsedTime();
+        
+        // Stop timer
+        stopQuizTimer();
+        
+        // Show loading state
+        showNotification('Submitting quiz...', 'info');
+        
+        // Submit to server
+        fetch('/api/submit_quiz', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                answers: answers,
+                quiz_type: '{{ quiz_type }}',
+                time_taken: timeTaken
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Server error: ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            showResults(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error submitting quiz. Please try again.', 'danger');
+            // Restart timer if submission failed
+            quizStartTime = Date.now() - (timeTaken * 1000);
+            startQuizTimer();
+        });
+    }
+    
+    function showResults(results) {
+        document.getElementById('quiz-questions').style.display = 'none';
+        document.getElementById('quiz-results').style.display = 'block';
+        
+        // Update score display
+        document.getElementById('score-percentage').textContent = Math.round(results.percentage) + '%';
+        const timeTaken = results.time_taken || 0;
+        const minutes = Math.floor(timeTaken / 60);
+        const seconds = timeTaken % 60;
+        const timeStr = `${minutes}:${String(seconds).padStart(2, '0')}`;
+        document.getElementById('score-details').textContent = `${results.score} out of ${results.total} correct | Time: ${timeStr}`;
+        
+        // Score message
+        const messageEl = document.getElementById('score-message');
+        if (results.percentage >= 80) {
+            messageEl.innerHTML = '<div class="alert alert-success"><i class="bi bi-trophy-fill me-2"></i>Excellent! You\'re ready for the exam!</div>';
+        } else if (results.percentage >= 70) {
+            messageEl.innerHTML = '<div class="alert alert-warning"><i class="bi bi-lightbulb-fill me-2"></i>Good progress! Review weak areas and try again.</div>';
+        } else {
+            messageEl.innerHTML = '<div class="alert alert-info"><i class="bi bi-book-fill me-2"></i>Keep studying! Focus on the topics you missed.</div>';
+        }
+        
+        // Detailed results
+        const detailedResults = document.getElementById('detailed-results');
+        let resultsHTML = '<h5 class="mb-3">Question Review:</h5>';
+        
+        Object.entries(results.results).forEach(([questionNum, result]) => {
+            const question = quizData.find(q => q.number == questionNum);
+            const isCorrect = result.correct;
+            
+            resultsHTML += `
+                <div class="card mb-3 ${isCorrect ? 'border-success' : 'border-danger'}">
+                    <div class="card-header ${isCorrect ? 'bg-success' : 'bg-danger'} text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Question ${questionNum}</span>
+                            <i class="bi ${isCorrect ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h6>${question.question}</h6>
+                        <div class="mt-2">
+                            <div class="text-muted">Your answer: <strong>${result.user_answer})</strong></div>
+                            <div class="text-success">Correct answer: <strong>${result.correct_answer})</strong></div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted"><strong>Explanation:</strong> ${result.explanation}</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        detailedResults.innerHTML = resultsHTML;
+        
+        // Scroll to results
+        document.getElementById('quiz-results').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function retakeQuiz() {
+        // Stop timer if running
+        stopQuizTimer();
+        
+        // Reset quiz state
+        currentQuestion = 0;
+        answers = {};
+        quizStartTime = null;
+        
+        // Show instructions again
+        document.getElementById('quiz-results').style.display = 'none';
+        document.getElementById('quiz-instructions').style.display = 'block';
+        
+        // Reset all selections
+        document.querySelectorAll('.quiz-option').forEach(option => {
+            option.classList.remove('selected');
+            const indicator = option.querySelector('.option-indicator');
+            if (indicator) {
+                indicator.className = 'bi bi-circle option-indicator';
+            }
+        });
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    // Add event delegation for quiz options to ensure they always work
+    document.addEventListener('click', function(e) {
+        const quizOption = e.target.closest('.quiz-option');
+        if (quizOption && document.getElementById('quiz-questions').style.display !== 'none') {
+            // Extract question number and option letter from onclick attribute
+            const onclickAttr = quizOption.getAttribute('onclick');
+            const match = onclickAttr.match(/selectOption\((\d+),\s*'([A-D])'/);
+            if (match) {
+                const questionNum = parseInt(match[1]);
+                const optionLetter = match[2];
+                selectOption(questionNum, optionLetter, quizOption);
+            }
+        }
+    });
+
+    // Keyboard navigation - only when NOT typing in input/textarea
+    document.addEventListener('keydown', function(e) {
+        // Don't trigger shortcuts if user is typing
+        const activeElement = document.activeElement;
+        if (activeElement.tagName === 'INPUT' || 
+            activeElement.tagName === 'TEXTAREA' || 
+            activeElement.isContentEditable) {
+            return;
+        }
+        
+        if (document.getElementById('quiz-questions').style.display !== 'none') {
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                const nextBtn = document.querySelector('#question-' + currentQuestion + ' .btn-primary, #question-' + currentQuestion + ' .btn-success');
+                if (nextBtn && !nextBtn.disabled) nextBtn.click();
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                const prevBtn = document.querySelector('#question-' + currentQuestion + ' .btn-outline-primary');
+                if (prevBtn) prevBtn.click();
+            } else if (e.key.toLowerCase() >= 'a' && e.key.toLowerCase() <= 'd') {
+                // Quick select options with A-D keys
+                e.preventDefault();
+                const optionIndex = e.key.toLowerCase().charCodeAt(0) - 'a'.charCodeAt(0);
+                const options = document.querySelectorAll('#question-' + currentQuestion + ' .quiz-option');
+                if (options[optionIndex]) {
+                    options[optionIndex].click();
+                }
+            } else if (e.key === '?') {
+                // Show keyboard shortcuts help
+                e.preventDefault();
+                showKeyboardHelp();
+            }
+        }
+    });
+    
+    function showKeyboardHelp() {
+        const helpHTML = `
+            <div class="modal fade" id="keyboardHelpModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="bi bi-keyboard me-2"></i>Keyboard Shortcuts
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <table class="table">
+                                <tbody>
+                                    <tr>
+                                        <td><kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> <kbd>D</kbd></td>
+                                        <td>Select answer options</td>
+                                    </tr>
+                                    <tr>
+                                        <td><kbd>→</kbd> Right Arrow</td>
+                                        <td>Next question</td>
+                                    </tr>
+                                    <tr>
+                                        <td><kbd>←</kbd> Left Arrow</td>
+                                        <td>Previous question</td>
+                                    </tr>
+                                    <tr>
+                                        <td><kbd>?</kbd></td>
+                                        <td>Show this help</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if present
+        const existing = document.getElementById('keyboardHelpModal');
+        if (existing) existing.remove();
+        
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', helpHTML);
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('keyboardHelpModal'));
+        modal.show();
+    }
+</script>
+{% endblock %} 

@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Azure AI-900 Study App{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-blue: #0078d4;
+            --secondary-blue: #106ebe;
+            --success-green: #107c10;
+            --warning-orange: #ff8c00;
+            --light-bg: #f8f9fa;
+            --card-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            box-shadow: var(--card-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+        
+        /* Sidebar Navigation */
+        .sidebar-nav {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100vh;
+            background: white;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 1040;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem 1rem;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .sidebar-content {
+            padding: 1rem 0;
+        }
+        
+        /* Main content offset for sidebar */
+        main {
+            margin-left: 250px;
+        }
+        
+        .navbar {
+            padding-left: calc(250px + 1rem);
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-item:hover {
+            background: var(--light-bg);
+            border-left-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+        
+        .sidebar-item i {
+            width: 24px;
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+        
+        .sidebar-item.sidebar-sub {
+            padding-left: 2.5rem;
+            font-size: 0.95rem;
+        }
+        
+        .sidebar-item.sidebar-sub i {
+            font-size: 0.9rem;
+        }
+        
+        .sidebar-item i.small-icon {
+            font-size: 0.5rem;
+        }
+        
+        .sidebar-section {
+            margin-bottom: 1rem;
+        }
+        
+        .sidebar-section-title {
+            padding: 0.5rem 1.5rem;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+        
+        .sidebar-section-title i {
+            margin-right: 0.5rem;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: var(--card-shadow);
+            border-radius: 12px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+        }
+
+        .progress-fill-0 {
+            width: 0%;
+        }
+
+        .progress-fill-33 {
+            width: 33%;
+        }
+
+        .progress-fill-100 {
+            width: 100%;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-blue);
+            border-color: var(--primary-blue);
+            font-weight: 500;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-blue);
+            border-color: var(--secondary-blue);
+        }
+        
+        .btn-success {
+            background-color: var(--success-green);
+            border-color: var(--success-green);
+        }
+        
+        .study-chunk {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+        }
+        
+        .study-chunk h3, .study-chunk h4 {
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+        }
+        
+        .study-chunk ul, .study-chunk ol {
+            padding-left: 1.5rem;
+        }
+        
+        .study-chunk li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .topic-card {
+            background: white;
+            border-left: 4px solid var(--primary-blue);
+        }
+        
+        .completion-badge {
+            background-color: var(--success-green);
+            color: white;
+            font-size: 0.875rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+        }
+        
+        .quiz-option {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        
+        .quiz-option:hover {
+            border-color: var(--primary-blue);
+            background-color: #f8f9ff;
+            transform: translateY(-1px);
+        }
+        
+        .quiz-option.selected {
+            border-color: var(--primary-blue) !important;
+            background-color: #e3f2fd !important;
+            box-shadow: 0 2px 8px rgba(0, 120, 212, 0.2);
+        }
+        
+        .quiz-option.correct {
+            border-color: var(--success-green) !important;
+            background-color: #e8f5e8 !important;
+        }
+        
+        .quiz-option.incorrect {
+            border-color: #dc3545 !important;
+            background-color: #f8d7da !important;
+        }
+        
+        .option-indicator {
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+        }
+        
+        .sidebar {
+            background: white;
+            min-height: calc(100vh - 76px);
+            box-shadow: var(--card-shadow);
+        }
+        
+        .sidebar .nav-link {
+            color: #6c757d;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.25rem;
+        }
+        
+        .sidebar .nav-link:hover {
+            background-color: var(--light-bg);
+            color: var(--primary-blue);
+        }
+        
+        .sidebar .nav-link.active {
+            background-color: var(--primary-blue);
+            color: white;
+        }
+        
+        .study-navigation {
+            position: sticky;
+            bottom: 20px;
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .flash-messages {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 1050;
+            max-width: 400px;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                min-height: auto;
+                margin-bottom: 1rem;
+            }
+            
+            .study-chunk {
+                padding: 1.5rem 1rem;
+            }
+            
+            .navbar-brand {
+                font-size: 1rem;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .btn-group, .d-flex.gap-2 {
+                flex-wrap: wrap;
+            }
+            
+            .study-navigation {
+                padding: 0.75rem;
+                position: static;
+            }
+            
+            .quiz-option {
+                padding: 0.75rem;
+            }
+            
+            #quiz-timer {
+                font-size: 0.9rem;
+                min-width: 120px !important;
+                padding: 0.5rem !important;
+            }
+            
+            .flash-messages {
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .display-4 {
+                font-size: 2rem;
+            }
+            
+            .study-chunk h3 {
+                font-size: 1.25rem;
+            }
+            
+            .study-chunk h4 {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="bi bi-mortarboard-fill me-2"></i>
+                Azure AI-900 Study App
+            </a>
+            
+            <div class="ms-auto d-flex align-items-center gap-2">
+                <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#globalSearchModal">
+                    <i class="bi bi-search"></i>
+                    <span class="d-none d-lg-inline ms-1"><kbd class="bg-white text-dark">Ctrl+K</kbd></span>
+                </button>
+                <a href="{{ url_for('analytics') }}" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-graph-up"></i>
+                    <span class="d-none d-lg-inline ms-1">Analytics</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar-nav" id="sidebarNav">
+        <div class="sidebar-header">
+            <h5 class="mb-0">
+                <i class="bi bi-mortarboard-fill me-2"></i>
+                Navigation
+            </h5>
+        </div>
+        
+        <div class="sidebar-content">
+            <!-- Dashboard -->
+            <a href="{{ url_for('index') }}" class="sidebar-item">
+                <i class="bi bi-house-fill"></i>
+                <span>Dashboard</span>
+            </a>
+            
+            <!-- Study Section -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">
+                    <i class="bi bi-book"></i>
+                    Study
+                </div>
+                {% for i in range(1, 6) %}
+                <a href="{{ url_for('study_topic', topic_num=i) }}" class="sidebar-item sidebar-sub">
+                    <i class="bi bi-circle-fill small-icon"></i>
+                    <span>Topic {{ i }}</span>
+                </a>
+                {% endfor %}
+                <a href="{{ url_for('flashcards') }}" class="sidebar-item sidebar-sub">
+                    <i class="bi bi-card-text"></i>
+                    <span>Flashcards</span>
+                </a>
+            </div>
+            
+            <!-- Quizzes Section -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">
+                    <i class="bi bi-question-circle"></i>
+                    Quizzes
+                </div>
+                <a href="{{ url_for('quiz', quiz_type='practice') }}" class="sidebar-item sidebar-sub">
+                    <i class="bi bi-play-circle"></i>
+                    <span>Quick Quiz</span>
+                </a>
+                <a href="{{ url_for('quiz_builder') }}" class="sidebar-item sidebar-sub">
+                    <i class="bi bi-gear"></i>
+                    <span>Custom Quiz</span>
+                </a>
+                <a href="{{ url_for('practice_exam') }}" class="sidebar-item sidebar-sub text-danger">
+                    <i class="bi bi-award"></i>
+                    <span>Practice Exam</span>
+                </a>
+            </div>
+            
+            <!-- Resources Section -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">
+                    <i class="bi bi-book-half"></i>
+                    Resources
+                </div>
+                <a href="{{ url_for('review') }}" class="sidebar-item sidebar-sub">
+                    <i class="bi bi-bookmark"></i>
+                    <span>Quick Review</span>
+                </a>
+                <a href="{{ url_for('service_comparison') }}" class="sidebar-item sidebar-sub">
+                    <i class="bi bi-diagram-3"></i>
+                    <span>Service Comparison</span>
+                </a>
+            </div>
+            
+            <!-- Progress Section -->
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">
+                    <i class="bi bi-graph-up"></i>
+                    Progress
+                </div>
+                <a href="{{ url_for('analytics') }}" class="sidebar-item sidebar-sub">
+                    <i class="bi bi-bar-chart"></i>
+                    <span>Analytics Dashboard</span>
+                </a>
+                <a href="{{ url_for('weak_areas') }}" class="sidebar-item sidebar-sub text-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>Weak Areas</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+        <div class="spinner-border text-light" role="status" style="width: 4rem; height: 4rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Global Search Modal (Ctrl+K) -->
+    <div class="modal fade" id="globalSearchModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="w-100">
+                        <input type="text" 
+                               class="form-control form-control-lg border-0" 
+                               id="globalSearchInput" 
+                               placeholder="Search topics, flashcards, notes... (Ctrl+K)"
+                               autofocus>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2" style="max-height: 500px; overflow-y: auto;">
+                    <div id="searchResults">
+                        <div class="text-center text-muted py-5">
+                            <i class="bi bi-search display-4 d-block mb-3"></i>
+                            <p>Start typing to search across all content...</p>
+                            <div class="small">
+                                <kbd>↑↓</kbd> Navigate • <kbd>Enter</kbd> Open • <kbd>Esc</kbd> Close
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Common JavaScript -->
+    <script>
+        // Auto-hide flash messages
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+        
+        // Progress tracking with localStorage persistence
+        function saveProgress(data) {
+            // Save to server
+            fetch('/api/update_progress', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            }).catch(error => {
+                console.error('Error saving progress to server:', error);
+                showNotification('Warning: Progress may not be saved to server', 'warning');
+            });
+            
+            // Also save to localStorage as backup
+            try {
+                const currentProgress = JSON.parse(localStorage.getItem('ai900_progress') || '{}');
+                const updatedProgress = { ...currentProgress, ...data, last_updated: new Date().toISOString() };
+                localStorage.setItem('ai900_progress', JSON.stringify(updatedProgress));
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+            }
+        }
+        
+        // Load progress from localStorage on page load
+        function loadProgressFromStorage() {
+            try {
+                const savedProgress = localStorage.getItem('ai900_progress');
+                if (savedProgress) {
+                    const progress = JSON.parse(savedProgress);
+                    console.log('Loaded progress from localStorage:', progress);
+                    return progress;
+                }
+            } catch (error) {
+                console.error('Error loading from localStorage:', error);
+            }
+            return null;
+        }
+        
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.querySelector('.flash-messages');
+            if (container) {
+                container.appendChild(alertDiv);
+                setTimeout(() => {
+                    const bsAlert = new bootstrap.Alert(alertDiv);
+                    bsAlert.close();
+                }, 5000);
+            }
+        }
+        
+        // Loading overlay
+        function showLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+            }
+        }
+        
+        function hideLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+        
+        // Smooth scrolling for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Global Search Modal (Ctrl+K)
+        let searchModal = null;
+        let searchData = null;
+        
+        // Open search modal with Ctrl+K or Cmd+K
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                if (!searchModal) {
+                    searchModal = new bootstrap.Modal(document.getElementById('globalSearchModal'));
+                }
+                searchModal.show();
+                setTimeout(() => document.getElementById('globalSearchInput').focus(), 100);
+            }
+        });
+        
+        // Load search data when modal opens
+        document.getElementById('globalSearchModal').addEventListener('shown.bs.modal', function() {
+            if (!searchData) {
+                loadSearchData();
+            }
+        });
+        
+        // Perform search as user types
+        document.getElementById('globalSearchInput').addEventListener('input', function(e) {
+            performGlobalSearch(e.target.value);
+        });
+        
+        // Clear search when modal closes
+        document.getElementById('globalSearchModal').addEventListener('hidden.bs.modal', function() {
+            document.getElementById('globalSearchInput').value = '';
+            document.getElementById('searchResults').innerHTML = `
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-search display-4 d-block mb-3"></i>
+                    <p>Start typing to search across all content...</p>
+                    <div class="small">
+                        <kbd>↑↓</kbd> Navigate • <kbd>Enter</kbd> Open • <kbd>Esc</kbd> Close
+                    </div>
+                </div>
+            `;
+        });
+        
+        function loadSearchData() {
+            // Create searchable index from page content
+            searchData = {
+                topics: [],
+                flashcards: [],
+                notes: []
+            };
+            
+            // Index would be built from actual content
+            // For now, we'll search the page as a fallback
+            searchData.ready = true;
+        }
+        
+        function performGlobalSearch(query) {
+            if (!query || query.length < 2) {
+                document.getElementById('searchResults').innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <p>Type at least 2 characters to search...</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const results = [];
+            const lowerQuery = query.toLowerCase();
+            
+            // Search topics
+            const topicLinks = [
+                {title: 'Topic 1: AI Workloads and Considerations', url: '/study/1', category: 'Study Topic'},
+                {title: 'Topic 2: Machine Learning on Azure', url: '/study/2', category: 'Study Topic'},
+                {title: 'Topic 3: Computer Vision Workloads', url: '/study/3', category: 'Study Topic'},
+                {title: 'Topic 4: Natural Language Processing', url: '/study/4', category: 'Study Topic'},
+                {title: 'Topic 5: Generative AI Workloads', url: '/study/5', category: 'Study Topic'},
+            ];
+            
+            topicLinks.forEach(topic => {
+                if (topic.title.toLowerCase().includes(lowerQuery)) {
+                    results.push(topic);
+                }
+            });
+            
+            // Search pages
+            const pageLinks = [
+                {title: 'Practice Quiz', url: '/quiz/practice', category: 'Quiz'},
+                {title: 'Custom Quiz Builder', url: '/quiz-builder', category: 'Quiz'},
+                {title: 'Practice Exam', url: '/practice-exam', category: 'Exam'},
+                {title: 'Flashcards', url: '/flashcards', category: 'Study'},
+                {title: 'Review Mode', url: '/review', category: 'Reference'},
+                {title: 'Azure Service Comparison', url: '/service-comparison', category: 'Reference'},
+                {title: 'Analytics Dashboard', url: '/analytics', category: 'Progress'},
+                {title: 'Weak Areas Study Plan', url: '/weak-areas', category: 'Study Plan'},
+            ];
+            
+            pageLinks.forEach(page => {
+                if (page.title.toLowerCase().includes(lowerQuery) || page.category.toLowerCase().includes(lowerQuery)) {
+                    results.push(page);
+                }
+            });
+            
+            // Search common Azure services
+            const services = [
+                {title: 'Azure AI Vision', url: '/service-comparison', category: 'Service'},
+                {title: 'Custom Vision', url: '/service-comparison', category: 'Service'},
+                {title: 'Azure AI Language', url: '/service-comparison', category: 'Service'},
+                {title: 'Azure AI Speech', url: '/service-comparison', category: 'Service'},
+                {title: 'Azure OpenAI Service', url: '/service-comparison', category: 'Service'},
+                {title: 'Azure Machine Learning', url: '/service-comparison', category: 'Service'},
+                {title: 'Azure Bot Service', url: '/service-comparison', category: 'Service'},
+                {title: 'Regression', url: '/service-comparison', category: 'ML Technique'},
+                {title: 'Classification', url: '/service-comparison', category: 'ML Technique'},
+                {title: 'Clustering', url: '/service-comparison', category: 'ML Technique'},
+            ];
+            
+            services.forEach(service => {
+                if (service.title.toLowerCase().includes(lowerQuery)) {
+                    results.push(service);
+                }
+            });
+            
+            // Display results
+            if (results.length === 0) {
+                document.getElementById('searchResults').innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-search display-6 d-block mb-2"></i>
+                        <p>No results found for "${query}"</p>
+                        <small>Try searching for topics, services, or features</small>
+                    </div>
+                `;
+            } else {
+                let html = '<div class="list-group list-group-flush">';
+                results.slice(0, 10).forEach(result => {
+                    html += `
+                        <a href="${result.url}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                <div>
+                                    <strong>${highlightMatch(result.title, query)}</strong>
+                                </div>
+                                <span class="badge bg-primary">${result.category}</span>
+                            </div>
+                        </a>
+                    `;
+                });
+                html += '</div>';
+                
+                if (results.length > 10) {
+                    html += `<div class="text-center text-muted small mt-2">Showing 10 of ${results.length} results</div>`;
+                }
+                
+                document.getElementById('searchResults').innerHTML = html;
+            }
+        }
+        
+        function highlightMatch(text, query) {
+            const index = text.toLowerCase().indexOf(query.toLowerCase());
+            if (index === -1) return text;
+            
+            const before = text.substring(0, index);
+            const match = text.substring(index, index + query.length);
+            const after = text.substring(index + query.length);
+            
+            return `${before}<mark>${match}</mark>${after}`;
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html> 

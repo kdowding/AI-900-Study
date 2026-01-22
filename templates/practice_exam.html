@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+
+{% block title %}AI-900 Practice Exam - Azure AI-900 Study App{% endblock %}
+
+{% block extra_css %}
+<style>
+.exam-timer {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    z-index: 1000;
+    min-width: 200px;
+}
+
+.exam-timer.warning {
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.exam-header {
+    background: linear-gradient(135deg, #d13438, #a5262a);
+}
+
+.exam-question {
+    border-left: 4px solid #d13438;
+}
+
+.answer-locked {
+    opacity: 0.6;
+    pointer-events: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Exam Instructions -->
+    <div id="exam-instructions">
+        <div class="row mb-4">
+            <div class="col-lg-8 mx-auto">
+                <div class="card exam-header text-white">
+                    <div class="card-body text-center">
+                        <h1 class="card-title mb-3">
+                            <i class="bi bi-award-fill me-2"></i>
+                            AI-900 Practice Exam
+                        </h1>
+                        <p class="lead mb-0">Full Exam Simulation - Real Exam Conditions</p>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Important: Read Before Starting
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Exam Format:</h6>
+                        <ul>
+                            <li><strong>{{ questions|length }} questions</strong> - Multiple choice</li>
+                            <li><strong>{{ exam_duration }} minutes</strong> - Countdown timer</li>
+                            <li><strong>700/1000 points</strong> required to pass (70%)</li>
+                            <li><strong>Review and change answers</strong> before final submission</li>
+                        </ul>
+
+                        <h6 class="mt-4">Exam Rules:</h6>
+                        <ul class="mb-0">
+                            <li>Answer questions at your own pace within the time limit</li>
+                            <li>Use Previous/Next buttons to navigate between questions</li>
+                            <li>Change your answers anytime before submitting</li>
+                            <li>Timer counts down from {{ exam_duration }} minutes</li>
+                            <li>Exam auto-submits when time expires</li>
+                            <li>Submit early when ready by clicking "Submit Exam"</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-4">
+                    <strong><i class="bi bi-lightbulb me-2"></i>Tip:</strong>
+                    Use this mode to test your readiness. If you consistently score 700+ (70%), you're ready for the real exam!
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button class="btn btn-danger btn-lg" onclick="startExam()">
+                        <i class="bi bi-play-fill me-2"></i>
+                        Start Exam
+                    </button>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Questions -->
+    <div id="exam-questions" style="display: none;">
+        <!-- Timer Card -->
+        <div class="card exam-timer" id="exam-timer-card">
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="small text-muted">Time Remaining</div>
+                    <div class="h2 mb-0" id="timer-display">60:00</div>
+                </div>
+                <div class="progress mt-2" style="height: 5px;">
+                    <div class="progress-bar bg-danger" id="timer-progress" style="width: 100%"></div>
+                </div>
+                <div class="small text-center mt-2">
+                    Question <span id="current-q">1</span> of {{ questions|length }}
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                {% for question in questions %}
+                <div class="question-container" id="q-{{ loop.index0 }}" 
+                     style="{% if loop.index0 != 0 %}display: none;{% endif %}">
+                    <div class="card exam-question mb-4">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Question {{ loop.index }} of {{ questions|length }}</h5>
+                                <span class="badge bg-secondary">{{ question.number }}</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title mb-4">{{ question.question }}</h6>
+                            
+                            <div class="options">
+                                {% for option in question.options %}
+                                <div class="quiz-option" 
+                                     onclick="selectExamAnswer({{ question.number }}, '{{ option.letter }}', {{ loop.index0 }})">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <strong>{{ option.letter }})</strong>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            {{ option.text }}
+                                        </div>
+                                        <div class="ms-3">
+                                            <i class="bi bi-circle option-indicator"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <div class="mt-4 d-flex justify-content-between">
+                                <div>
+                                    {% if loop.index0 > 0 %}
+                                    <button class="btn btn-outline-secondary" 
+                                            onclick="previousQuestion({{ loop.index0 }})">
+                                        <i class="bi bi-arrow-left me-1"></i>Previous
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% if loop.index < questions|length %}
+                                    <button class="btn btn-primary btn-next" id="next-{{ loop.index0 }}" 
+                                            onclick="nextQuestion({{ loop.index0 }})" disabled>
+                                        Next Question <i class="bi bi-arrow-right ms-1"></i>
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-success btn-next" id="next-{{ loop.index0 }}" 
+                                            onclick="submitExam()" disabled>
+                                        <i class="bi bi-check-circle me-1"></i>Submit Exam
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Results -->
+    <div id="exam-results" style="display: none;">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card">
+                    <div class="card-header text-center" id="result-header">
+                        <h3 class="mb-0">Exam Results</h3>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="display-1 fw-bold mb-3" id="exam-score">0</div>
+                        <div class="h5 text-muted mb-4" id="exam-percentage">0%</div>
+                        
+                        <div id="pass-fail-message" class="alert mb-4"></div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <div class="h6">Correct Answers</div>
+                                        <div class="h4" id="correct-count">0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <div class="h6">Time Taken</div>
+                                        <div class="h4" id="time-taken">0:00</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <div class="h6">Passing Score</div>
+                                        <div class="h4">700/1000</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="detailed-results" class="text-start"></div>
+
+                        <div class="d-flex gap-2 justify-content-center mt-4">
+                            <a href="{{ url_for('practice_exam') }}" class="btn btn-danger">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Retake Exam
+                            </a>
+                            <a href="{{ url_for('analytics') }}" class="btn btn-primary">
+                                <i class="bi bi-graph-up me-1"></i>View Analytics
+                            </a>
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-house me-1"></i>Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentQuestion = 0;
+let answers = {};
+let quizData = {{ questions|tojson|safe }};
+let examDuration = {{ exam_duration }} * 60; // Convert to seconds
+let timeRemaining = examDuration;
+let examTimer = null;
+let examStartTime = null;
+
+function startExam() {
+    document.getElementById('exam-instructions').style.display = 'none';
+    document.getElementById('exam-questions').style.display = 'block';
+    
+    // Start countdown timer
+    examStartTime = Date.now();
+    startCountdownTimer();
+}
+
+function startCountdownTimer() {
+    updateTimerDisplay();
+    
+    examTimer = setInterval(function() {
+        timeRemaining--;
+        updateTimerDisplay();
+        
+        // Warning when 5 minutes left
+        if (timeRemaining === 300) {
+            document.getElementById('exam-timer-card').classList.add('warning');
+            showNotification('5 minutes remaining!', 'warning');
+        }
+        
+        // Auto-submit when time runs out
+        if (timeRemaining <= 0) {
+            clearInterval(examTimer);
+            showNotification('Time expired! Submitting exam...', 'danger');
+            setTimeout(submitExam, 1000);
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    document.getElementById('timer-display').textContent = 
+        `${minutes}:${String(seconds).padStart(2, '0')}`;
+    
+    // Update progress bar
+    const progress = (timeRemaining / examDuration) * 100;
+    document.getElementById('timer-progress').style.width = progress + '%';
+    
+    // Change color based on time
+    const progressBar = document.getElementById('timer-progress');
+    if (timeRemaining < 300) {
+        progressBar.className = 'progress-bar bg-danger';
+    } else if (timeRemaining < 600) {
+        progressBar.className = 'progress-bar bg-warning';
+    }
+}
+
+function selectExamAnswer(questionNum, optionLetter, questionIndex) {
+    const container = document.getElementById('q-' + currentQuestion);
+    
+    // Remove selection from all options in current question
+    container.querySelectorAll('.quiz-option').forEach(opt => {
+        opt.classList.remove('selected');
+        const indicator = opt.querySelector('.option-indicator');
+        if (indicator) {
+            indicator.className = 'bi bi-circle option-indicator';
+        }
+    });
+    
+    // Select clicked option
+    const clickedOption = container.querySelectorAll('.quiz-option')[questionIndex];
+    clickedOption.classList.add('selected');
+    const selectedIndicator = clickedOption.querySelector('.option-indicator');
+    if (selectedIndicator) {
+        selectedIndicator.className = 'bi bi-check-circle-fill text-primary option-indicator';
+    }
+    
+    // Store answer (allow changing answer)
+    answers[questionNum] = optionLetter;
+    
+    // Enable next button
+    const nextBtn = document.getElementById('next-' + currentQuestion);
+    if (nextBtn) {
+        nextBtn.disabled = false;
+    }
+}
+
+function showExamQuestion(questionIdx) {
+    // Hide all questions
+    document.querySelectorAll('.question-container').forEach(q => {
+        q.style.display = 'none';
+    });
+    
+    // Show selected question
+    const container = document.getElementById('q-' + questionIdx);
+    container.style.display = 'block';
+    currentQuestion = questionIdx;
+    
+    // Update counter
+    document.getElementById('current-q').textContent = questionIdx + 1;
+    
+    // Restore previously selected answer if exists
+    const questionNum = quizData[questionIdx].number;
+    if (answers[questionNum]) {
+        const options = container.querySelectorAll('.quiz-option');
+        options.forEach((option, idx) => {
+            const onclickAttr = option.getAttribute('onclick');
+            const match = onclickAttr.match(/'([A-D])'/);
+            if (match && match[1] === answers[questionNum]) {
+                option.classList.add('selected');
+                const indicator = option.querySelector('.option-indicator');
+                if (indicator) {
+                    indicator.className = 'bi bi-check-circle-fill text-primary option-indicator';
+                }
+            }
+        });
+        // Enable next button if answer already selected
+        const nextBtn = document.getElementById('next-' + questionIdx);
+        if (nextBtn) {
+            nextBtn.disabled = false;
+        }
+    }
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextQuestion(currentIdx) {
+    if (!answers[quizData[currentIdx].number]) {
+        showNotification('Please select an answer', 'warning');
+        return;
+    }
+    
+    showExamQuestion(currentIdx + 1);
+}
+
+function previousQuestion(currentIdx) {
+    showExamQuestion(currentIdx - 1);
+}
+
+function submitExam() {
+    // Check if all answered
+    const unanswered = quizData.filter(q => !answers[q.number]).length;
+    if (unanswered > 0) {
+        if (!confirm(`You have ${unanswered} unanswered questions. Submit anyway?`)) {
+            return;
+        }
+    }
+    
+    // Stop timer
+    if (examTimer) {
+        clearInterval(examTimer);
+    }
+    
+    // Calculate time taken
+    const timeTaken = examDuration - timeRemaining;
+    
+    // Submit to server
+    fetch('/api/submit_quiz', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            answers: answers,
+            quiz_type: 'practice_exam',
+            time_taken: timeTaken
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        showExamResults(data, timeTaken);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Error submitting exam', 'danger');
+    });
+}
+
+function showExamResults(results, timeTaken) {
+    document.getElementById('exam-questions').style.display = 'none';
+    document.getElementById('exam-results').style.display = 'block';
+    
+    // Calculate score out of 1000
+    const score = Math.round((results.score / results.total) * 1000);
+    const percentage = results.percentage;
+    const passed = score >= 700;
+    
+    // Update display
+    document.getElementById('exam-score').textContent = score + '/1000';
+    document.getElementById('exam-percentage').textContent = percentage.toFixed(1) + '%';
+    document.getElementById('correct-count').textContent = results.score + '/' + results.total;
+    
+    const minutes = Math.floor(timeTaken / 60);
+    const seconds = timeTaken % 60;
+    document.getElementById('time-taken').textContent = `${minutes}:${String(seconds).padStart(2, '0')}`;
+    
+    // Pass/Fail message
+    const messageEl = document.getElementById('pass-fail-message');
+    const headerEl = document.getElementById('result-header');
+    
+    if (passed) {
+        messageEl.className = 'alert alert-success';
+        messageEl.innerHTML = `
+            <h4><i class="bi bi-check-circle-fill me-2"></i>Congratulations! You Passed!</h4>
+            <p class="mb-0">You're ready for the real AI-900 exam. Your score of ${score}/1000 exceeds the passing threshold of 700/1000.</p>
+        `;
+        headerEl.className = 'card-header bg-success text-white text-center';
+    } else {
+        messageEl.className = 'alert alert-warning';
+        messageEl.innerHTML = `
+            <h4><i class="bi bi-x-circle-fill me-2"></i>Not Quite There Yet</h4>
+            <p class="mb-0">You scored ${score}/1000. You need 700/1000 to pass. Review the explanations below and keep studying!</p>
+        `;
+        headerEl.className = 'card-header bg-warning text-center';
+    }
+    
+    // Detailed results
+    const detailedDiv = document.getElementById('detailed-results');
+    let html = '<h5 class="mb-3">Answer Review:</h5>';
+    
+    Object.entries(results.results).forEach(([questionNum, result]) => {
+        const question = quizData.find(q => q.number == questionNum);
+        const isCorrect = result.correct;
+        
+        html += `
+            <div class="card mb-2 ${isCorrect ? 'border-success' : 'border-danger'}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <strong>Q${questionNum}: ${question.question.substring(0, 80)}...</strong>
+                        <span class="${isCorrect ? 'text-success' : 'text-danger'}">
+                            <i class="bi ${isCorrect ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i>
+                        </span>
+                    </div>
+                    <div class="small mt-2">
+                        <div>Your answer: <strong>${result.user_answer})</strong></div>
+                        ${!isCorrect ? `<div class="text-success">Correct answer: <strong>${result.correct_answer})</strong></div>` : ''}
+                    </div>
+                    <div class="mt-2 small text-muted">
+                        <strong>Explanation:</strong> ${result.explanation}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    detailedDiv.innerHTML = html;
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+{% endblock %}
+

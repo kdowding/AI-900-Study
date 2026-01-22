@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Weak Areas Study Plan - Azure AI-900 Study App{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="card-title mb-2">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                Weak Areas Study Plan
+                            </h1>
+                            <p class="card-text mb-0">
+                                AI-powered analysis of your performance with targeted study recommendations
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{{ url_for('index') }}" class="btn btn-dark">
+                                <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if weak_topics %}
+    <!-- Weak Topics Analysis -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="bi bi-bar-chart-fill me-2"></i>
+                Performance Analysis
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted">Based on your quiz performance, we've identified these areas that need improvement:</p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Topic</th>
+                                    <th>Performance</th>
+                                    <th>Score</th>
+                                    <th>Priority</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for topic in weak_topics %}
+                                <tr>
+                                    <td>
+                                        <strong>Topic {{ topic.number }}</strong><br>
+                                        <small class="text-muted">{{ topic.title[:60] }}...</small>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 25px; min-width: 150px;">
+                                            <div class="progress-bar {% if topic.percentage < 50 %}bg-danger{% elif topic.percentage < 70 %}bg-warning{% else %}bg-success{% endif %}" 
+                                                 style="width: {{ topic.percentage }}%">
+                                                {{ "%.1f"|format(topic.percentage) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ topic.correct }}/{{ topic.total }}</td>
+                                    <td>
+                                        <span class="badge {% if topic.priority == 'High' %}bg-danger{% else %}bg-warning{% endif %}">
+                                            {{ topic.priority }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('study_topic', topic_num=topic.number) }}" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-book me-1"></i>Study
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Personalized Study Plan -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="bi bi-list-check me-2"></i>
+                Your Personalized Study Plan
+            </h3>
+        </div>
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Recommended Study Steps</h5>
+                        <span class="badge bg-light text-dark">
+                            <i class="bi bi-clock me-1"></i>
+                            ~{{ study_plan.estimated_time }} minutes
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% for step in study_plan.steps %}
+                    <div class="card mb-3 {% if step.priority == 'High' %}border-danger{% elif step.priority == 'Medium' %}border-warning{% endif %}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="card-title">
+                                        <span class="badge bg-secondary me-2">Step {{ step.step_num }}</span>
+                                        {{ step.title }}
+                                        {% if step.priority == 'High' %}
+                                        <span class="badge bg-danger ms-2">Priority</span>
+                                        {% endif %}
+                                    </h6>
+                                    <p class="card-text text-muted mb-2">{{ step.description }}</p>
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock me-1"></i>
+                                        Estimated time: {{ step.estimated_time }} minutes
+                                    </small>
+                                </div>
+                                <div class="ms-3">
+                                    <a href="{{ step.action_url }}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-arrow-right me-1"></i>
+                                        {{ step.action }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Study Plan Summary -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Plan Summary
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Total Steps:</strong> {{ study_plan.steps|length }}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Estimated Time:</strong> {{ study_plan.estimated_time }} minutes
+                        (~{{ (study_plan.estimated_time / 60)|round(1) }} hours)
+                    </div>
+                    <div class="mb-3">
+                        <strong>Focus Areas:</strong>
+                        <ul class="small mb-0 mt-2">
+                            {% for area in study_plan.focus_areas %}
+                            <li>{{ area[:50] }}...</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-info small mb-0">
+                        <strong>Tip:</strong> Complete all steps in order for best results. Each step builds on the previous one.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Track Progress
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small">After completing your study plan:</p>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('practice_exam') }}" class="btn btn-danger btn-sm">
+                            <i class="bi bi-award me-1"></i>
+                            Take Practice Exam
+                        </a>
+                        <a href="{{ url_for('analytics') }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-graph-up me-1"></i>
+                            View Analytics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- No Weak Areas -->
+    <div class="row">
+        <div class="col-lg-6 mx-auto">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <i class="bi bi-trophy-fill text-success display-1 mb-3"></i>
+                    <h3 class="card-title">Excellent Performance!</h3>
+                    <p class="card-text">
+                        You don't have any significant weak areas. You're scoring well across all topics!
+                    </p>
+                    
+                    <div class="alert alert-info mt-4">
+                        <strong>Next Steps:</strong>
+                        <ul class="text-start mb-0">
+                            <li>Take the full practice exam to test your readiness</li>
+                            <li>Review flashcards to maintain your knowledge</li>
+                            <li>Schedule your AI-900 exam!</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-flex gap-2 justify-content-center mt-4">
+                        <a href="{{ url_for('practice_exam') }}" class="btn btn-danger">
+                            <i class="bi bi-award me-1"></i>
+                            Practice Exam
+                        </a>
+                        <a href="{{ url_for('flashcards') }}" class="btn btn-primary">
+                            <i class="bi bi-card-text me-1"></i>
+                            Review Flashcards
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

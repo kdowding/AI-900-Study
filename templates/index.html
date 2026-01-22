@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Azure AI-900 Study App{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Welcome Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <h1 class="card-title mb-2">
+                                <i class="bi bi-mortarboard-fill me-2"></i>
+                                Welcome to Your AI-900 Study Dashboard
+                            </h1>
+                            <p class="card-text mb-0">
+                                Master Azure AI fundamentals with bite-sized lessons, practice quizzes, and progress tracking.
+                                Your journey to AI-900 certification starts here!
+                            </p>
+                        </div>
+                        <div class="col-lg-4 text-lg-end">
+                            <div class="text-center">
+                                <div class="display-4 fw-bold">{{ "%.0f"|format(completion_percentage) }}%</div>
+                                <small>Overall Progress</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-book-fill text-primary display-6"></i>
+                    <h5 class="card-title mt-2">{{ progress.topics_completed|length }}/5</h5>
+                    <p class="card-text text-muted">Topics Completed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-question-circle-fill text-success display-6"></i>
+                    <h5 class="card-title mt-2">{{ progress.quiz_scores|length }}</h5>
+                    <p class="card-text text-muted">Quizzes Taken</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-card-text text-info display-6"></i>
+                    <h5 class="card-title mt-2">{{ progress.get('flashcard_progress', {}).get('stats', {}).get('total_mastered', 0) }}</h5>
+                    <p class="card-text text-muted">Cards Mastered</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="bi bi-calendar-check-fill text-info display-6"></i>
+                    <h5 class="card-title mt-2">
+                        {% if progress.last_study_date %}
+                            Today
+                        {% else %}
+                            Start!
+                        {% endif %}
+                    </h5>
+                    <p class="card-text text-muted">Last Studied</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Readiness Quick View -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card {% if readiness.ready %}bg-success{% else %}bg-primary{% endif %} text-white">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="card-title">
+                                <i class="bi bi-trophy me-2"></i>
+                                Exam Readiness
+                            </h5>
+                            <div class="display-4 fw-bold">{{ readiness.overall }}%</div>
+                            {% if readiness.ready %}
+                                <p class="mb-0">🎉 You're ready for the AI-900 exam!</p>
+                            {% else %}
+                                <p class="mb-0 small">{{ readiness.recommendations[0] if readiness.recommendations else 'Keep studying!' }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                            <a href="{{ url_for('analytics') }}" class="btn btn-light btn-lg">
+                                <i class="bi bi-graph-up me-1"></i>
+                                View Full Analytics
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="bi bi-lightning-fill text-warning me-2"></i>
+                Quick Actions
+            </h3>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-play-circle-fill text-primary display-4"></i>
+                    <h5 class="card-title mt-3">Continue Studying</h5>
+                    {% if progress.get('topics_started', []) %}
+                        <p class="card-text">Pick up where you left off in Topic {{ progress.current_topic }}</p>
+                        <a href="{{ url_for('study_topic', topic_num=progress.current_topic) }}" class="btn btn-primary">
+                            Continue Learning
+                        </a>
+                    {% else %}
+                        <p class="card-text">Start your learning journey with Topic 1</p>
+                        <a href="{{ url_for('study_topic', topic_num=1) }}" class="btn btn-primary">
+                            Start Learning
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-question-circle-fill text-success display-4"></i>
+                    <h5 class="card-title mt-3">Practice Quizzes</h5>
+                    <p class="card-text">Test your knowledge with customized quizzes</p>
+                    <div class="d-flex gap-2 justify-content-center flex-wrap">
+                        <a href="{{ url_for('quiz', quiz_type='practice') }}" class="btn btn-success btn-sm">
+                            Quick Quiz
+                        </a>
+                        <a href="{{ url_for('quiz_builder') }}" class="btn btn-outline-success btn-sm">
+                            Custom Quiz
+                        </a>
+                    </div>
+                    <hr class="my-2">
+                    <a href="{{ url_for('practice_exam') }}" class="btn btn-danger btn-sm">
+                        <i class="bi bi-award me-1"></i>Full Practice Exam
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-card-text text-secondary display-4"></i>
+                    <h5 class="card-title mt-3">Flashcards</h5>
+                    <p class="card-text">Master key concepts with spaced repetition</p>
+                    <a href="{{ url_for('flashcards') }}" class="btn btn-secondary">
+                        Study Cards
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mt-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-bookmark-fill text-info display-4"></i>
+                    <h5 class="card-title mt-3">Quick Review</h5>
+                    <p class="card-text">Review key concepts and important terms</p>
+                    <a href="{{ url_for('review') }}" class="btn btn-info">
+                        Review Now
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mt-3">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-exclamation-triangle-fill text-warning display-4"></i>
+                    <h5 class="card-title mt-3">Weak Areas</h5>
+                    <p class="card-text">AI-powered study plan for your weak topics</p>
+                    <a href="{{ url_for('weak_areas') }}" class="btn btn-warning">
+                        View Plan
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Study Topics Overview -->
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="bi bi-collection-fill me-2"></i>
+                Study Topics
+            </h3>
+        </div>
+        {% if study_data.outline and study_data.outline.topics %}
+            {% for topic in study_data.outline.topics %}
+            <div class="col-lg-6 mb-3">
+                <div class="card topic-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title text-primary">
+                                Topic {{ topic.number }}: {{ topic.title.split(':')[1] if ':' in topic.title else topic.title }}
+                            </h5>
+                            {% if topic.number in progress.topics_completed %}
+                                <span class="completion-badge">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Completed
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">Exam Weight: {{ topic.percentage }}</small>
+                        </div>
+                        
+                        <!-- Progress bar for this topic -->
+                        <div class="progress mb-3">
+                            {% set topic_started = topic.number in progress.get('topics_started', []) %}
+                            {% set topic_progress = 100 if topic.number in progress.topics_completed else (33 if topic_started else 0) %}
+                            <div class="progress-bar progress-fill-{{ topic_progress }}"
+                                 aria-valuenow="{{ topic_progress }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        
+                        <p class="card-text">
+                            {{ topic.content.split('\n')[0][:150] }}{% if topic.content.split('\n')[0]|length > 150 %}...{% endif %}
+                        </p>
+                        
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('study_topic', topic_num=topic.number) }}" 
+                               class="btn {% if topic.number in progress.topics_completed %}btn-outline-primary{% else %}btn-primary{% endif %} btn-sm">
+                                {% if topic.number in progress.topics_completed %}
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Review
+                                {% elif topic_started %}
+                                    <i class="bi bi-play-fill me-1"></i>Continue
+                                {% else %}
+                                    <i class="bi bi-play-fill me-1"></i>Start
+                                {% endif %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-warning" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Study content is being loaded. Please refresh the page in a moment.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Quiz Scores -->
+    {% if progress.quiz_scores %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="bi bi-graph-up me-2"></i>
+                Recent Quiz Performance
+            </h3>
+        </div>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        {% for quiz_type, score_data in progress.quiz_scores.items() %}
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <div class="h4 text-primary">{{ score_data.percentage|round }}%</div>
+                                <div class="text-muted">{{ quiz_type.title() }} Quiz</div>
+                                <small class="text-muted">{{ score_data.score }}/{{ score_data.total }} correct</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Study Tips -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-lightbulb-fill text-warning me-2"></i>
+                        Study Tips for Success
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    Study in short 10-15 minute sessions daily
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    Take practice quizzes after each topic
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    Focus on Azure-specific services and scenarios
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    Review key essentials before the exam
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    Use flashcards daily for spaced repetition
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    Aim for 80%+ on practice tests
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check-circle text-success me-2"></i>
+                                    Understand responsible AI principles
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update last study date when page loads
+    saveProgress({
+        last_study_date: new Date().toISOString()
+    });
+</script>
+{% endblock %} 

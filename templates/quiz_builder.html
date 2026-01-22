@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Custom Quiz Builder - Azure AI-900 Study App{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="card-title mb-2">
+                                <i class="bi bi-gear-fill me-2"></i>
+                                Custom Quiz Builder
+                            </h1>
+                            <p class="card-text mb-0">
+                                Create a personalized quiz tailored to your study needs
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{{ url_for('index') }}" class="btn btn-light">
+                                <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-body">
+                    <form id="quizBuilderForm" action="{{ url_for('quiz', quiz_type='custom') }}" method="GET">
+                        <!-- Number of Questions -->
+                        <div class="mb-4">
+                            <label class="form-label h5">
+                                <i class="bi bi-hash me-2"></i>
+                                Number of Questions
+                            </label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <input type="range" class="form-range" id="numQuestionsRange" 
+                                           name="num_questions" min="5" max="50" value="10" step="5">
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="numQuestionsInput" 
+                                               min="5" max="50" value="10">
+                                        <span class="input-group-text">questions</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted">Total available: {{ study_data.practice_quiz.questions|length }}</small>
+                        </div>
+
+                        <!-- Topic Selection -->
+                        <div class="mb-4">
+                            <label class="form-label h5">
+                                <i class="bi bi-collection me-2"></i>
+                                Select Topics
+                            </label>
+                            <p class="text-muted small">Choose specific topics or leave all unchecked for questions from all topics</p>
+                            
+                            <div class="row">
+                                {% for i in range(1, 6) %}
+                                <div class="col-md-6 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="topics" 
+                                               value="topic_{{ i }}" id="topic{{ i }}">
+                                        <label class="form-check-label" for="topic{{ i }}">
+                                            {% if study_data.outline and study_data.outline.topics %}
+                                                {% set topic = study_data.outline.topics[i-1] %}
+                                                <strong>Topic {{ i }}:</strong> {{ topic.title[:50] }}...
+                                            {% else %}
+                                                Topic {{ i }}
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Quick Presets -->
+                        <div class="mb-4">
+                            <label class="form-label h5">
+                                <i class="bi bi-lightning-fill me-2"></i>
+                                Quick Presets
+                            </label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button type="button" class="btn btn-outline-primary" onclick="setPreset('quick')">
+                                    Quick Quiz (10 questions)
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="setPreset('practice')">
+                                    Practice Test (25 questions)
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" onclick="setPreset('full')">
+                                    Full Exam (50 questions)
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="setPreset('clear')">
+                                    Reset
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Quiz Preview -->
+                        <div class="alert alert-info">
+                            <strong>
+                                <i class="bi bi-info-circle me-2"></i>
+                                Quiz Preview:
+                            </strong>
+                            <span id="quizPreview">10 random questions from all topics</span>
+                        </div>
+
+                        <!-- Start Quiz Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-play-fill me-2"></i>
+                                Start Custom Quiz
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tips Card -->
+            <div class="card mt-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightbulb text-warning me-2"></i>
+                        Quiz Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Start with <strong>10-15 questions</strong> for focused practice</li>
+                        <li>Select specific topics to strengthen weak areas</li>
+                        <li>Take a <strong>full 50-question exam</strong> before the real test</li>
+                        <li>Aim for <strong>80%+ consistently</strong> before scheduling your exam</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Sync range slider and number input
+    const rangeInput = document.getElementById('numQuestionsRange');
+    const numberInput = document.getElementById('numQuestionsInput');
+    
+    rangeInput.addEventListener('input', function() {
+        numberInput.value = this.value;
+        updatePreview();
+    });
+    
+    numberInput.addEventListener('input', function() {
+        rangeInput.value = this.value;
+        updatePreview();
+    });
+    
+    // Update preview when topics change
+    document.querySelectorAll('input[name="topics"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updatePreview);
+    });
+    
+    function updatePreview() {
+        const numQuestions = numberInput.value;
+        const selectedTopics = Array.from(document.querySelectorAll('input[name="topics"]:checked'));
+        
+        let preview = `${numQuestions} random questions from `;
+        
+        if (selectedTopics.length === 0) {
+            preview += 'all topics';
+        } else if (selectedTopics.length === 5) {
+            preview += 'all topics';
+        } else {
+            const topicNums = selectedTopics.map(cb => cb.value.replace('topic_', '')).join(', ');
+            preview += `Topic${selectedTopics.length > 1 ? 's' : ''} ${topicNums}`;
+        }
+        
+        document.getElementById('quizPreview').textContent = preview;
+    }
+    
+    function setPreset(preset) {
+        const allCheckboxes = document.querySelectorAll('input[name="topics"]');
+        
+        switch(preset) {
+            case 'quick':
+                numberInput.value = 10;
+                rangeInput.value = 10;
+                allCheckboxes.forEach(cb => cb.checked = false);
+                break;
+            case 'practice':
+                numberInput.value = 25;
+                rangeInput.value = 25;
+                allCheckboxes.forEach(cb => cb.checked = false);
+                break;
+            case 'full':
+                numberInput.value = 50;
+                rangeInput.value = 50;
+                allCheckboxes.forEach(cb => cb.checked = true);
+                break;
+            case 'clear':
+                numberInput.value = 10;
+                rangeInput.value = 10;
+                allCheckboxes.forEach(cb => cb.checked = false);
+                break;
+        }
+        
+        updatePreview();
+    }
+    
+    // Initial preview
+    updatePreview();
+</script>
+{% endblock %}
+
